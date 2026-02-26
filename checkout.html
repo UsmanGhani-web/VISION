@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - beastro</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Checkout - Beastro</title>
+</head>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
 </head>
 <body>
     <!-- Navigation -->
@@ -14,12 +18,13 @@
             <div class="nav-logo-section">
                 <a href="index.html" class="nav-logo">
                     <i class="fas fa-gamepad"></i>
-                    <span>beastro</span>
+                    <span>Beastro</span>
                 </a>
             </div>
             
             <div class="nav-menu-section">
                 <ul class="nav-menu">
+                    
                     <li class="nav-item">
                         <a href="products.html" class="nav-link">
                             <i class="fas fa-box"></i>
@@ -44,13 +49,15 @@
                             Contact
                         </a>
                     </li>
+
+                    
                 </ul>
                 
                 <!-- Search Bar -->
-                <div class="nav-search">
-                    <div class="search-container">
-                        <input type="text" id="global-search" class="search-input" placeholder="Search products, components...">
-                        <button type="button" id="search-btn" class="search-btn">
+                <div class="nav-search" >
+                    <div class="search-container" style="border: none; background: transparent; padding: 0;">
+                        <input type="text" id="global-search" name="search" class="search-input" placeholder="Search products"  style="width: auto; border-radius: 20px;">
+                        <button type="button" id="search-btn" class="search-btn" >
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
@@ -58,18 +65,49 @@
             </div>
             
             <div class="nav-actions">
-                <div class="nav-auth-section" id="nav-auth-section">
+                <div class="cart-icon" id="cart-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cart-count">0</span>
+                </div>
+                <div class="nav-auth-section" id="nav-auth-section"style="border: none; background: transparent; padding: 0;">
                     <!-- Auth content will be populated by auth.js -->
-                </div>
-                
+                    </div>
                 <div class="nav-toggle">
-                    <span class="bar"></span>
-                    <span class="bar"></span>
-                    <span class="bar"></span>
-                </div>
+  <span class="bar"></span>
+  <span class="bar"></span>
+  <span class="bar"></span>
+</div>
+    
             </div>
         </div>
     </nav>
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Shopping Cart</h3>
+            <button class="close-cart" id="close-cart">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Cart items will be displayed here -->
+        </div>
+        <div class="cart-footer">
+            <div class="cart-total">
+                <strong>Total: PKR <span id="cart-total">0.00</span></strong>
+            </div>
+            <div class="cart-actions">
+                <button class="btn btn-secondary continue-shopping-btn" id="continue-shopping-btn">
+                    <i class="fas fa-arrow-left"></i>
+                    Continue Shopping
+                </button>
+                <button class="btn btn-primary checkout-btn" id="checkout-btn">
+                    <i class="fas fa-credit-card"></i>
+                    Checkout
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Checkout Section -->
     <main class="checkout-main">
@@ -143,9 +181,9 @@
                                 <input type="text" id="address" name="address" placeholder="Street address" required>
                             </div>
                             <div class="form-row">
-                                <div class="form-group">
+                                <div class="form-group" >
                                     <label for="city">City *</label>
-                                    <select id="city" name="city" required>
+                                    <select id="city" name="city" style="background: rgba(15, 23, 42, 0.8);" required>
                                         <option value="">Select City</option>
                                         <option value="karachi">Karachi</option>
                                         <option value="lahore">Lahore</option>
@@ -167,7 +205,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="province">Province *</label>
-                                <select id="province" name="province" required>
+                                <select id="province" name="province" style="background: rgba(15, 23, 42, 0.8);" required>
                                     <option value="">Select Province</option>
                                     <option value="punjab">Punjab</option>
                                     <option value="sindh">Sindh</option>
@@ -385,10 +423,10 @@
                     <h3>beastro</h3>
                     <p>Your ultimate destination for premium gaming PC accessories and components.</p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="https://www.facebook.com"><i class="fab fa-facebook"></i></a>
+                        <a href="https://www.twitter.com"><i class="fab fa-twitter"></i></a>
+                        <a href="https://www.instagram.com"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.youtube.com"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">

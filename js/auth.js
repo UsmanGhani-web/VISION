@@ -72,10 +72,7 @@ class AuthSystem {
                         <i class="fas fa-sign-in-alt"></i>
                         Login
                     </a>
-                    <a href="register.html" class="auth-btn register-btn">
-                        <i class="fas fa-user-plus"></i>
-                        Register
-                    </a>
+                    
                 </div>
             `;
             console.log('Navbar updated with auth buttons');
@@ -569,8 +566,8 @@ function createDemoUser() {
 }
 
 // Add notification animation
-const style = document.createElement('style');
-style.textContent = `
+const style1 = document.createElement('style');
+style1.textContent = `
     @keyframes slideIn {
         from {
             transform: translateX(100%);
@@ -600,4 +597,4 @@ style.textContent = `
         border-color: #10b981;
     }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style1); 

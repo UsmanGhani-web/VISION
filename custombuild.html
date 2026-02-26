@@ -15,7 +15,7 @@
             <div class="nav-logo-section">
                 <a href="index.html" class="nav-logo">
                     <i class="fas fa-gamepad"></i>
-                    <span>beastro</span>
+                    <span>Beastro</span>
                 </a>
             </div>
             
@@ -55,7 +55,7 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cart-count">0</span>
                 </div>
-                <div class="nav-auth-section" id="nav-auth-section">
+                <div class="nav-auth-section" id="nav-auth-section"style="border: none; background: transparent; padding: 0;">
                     <!-- Auth content will be populated by auth.js -->
                 </div>
                 <div class="nav-toggle">
@@ -155,8 +155,9 @@
                 <div class="builder-preview">
                     <div class="pc-visualization">
                         <div class="pc-case-main">
-                            <img src="https://images.unsplash.com/photo-1593640408182-31c70c8268f7?w=400&h=300&fit=crop&crop=center" alt="Gaming PC Case" class="pc-case-image">
+                            <div class="pc-case-image" aria-hidden="true"></div>
                             <div class="pc-overlay">
+                                <div class="pc-case-title">Gaming PC Case</div>
                                 <div class="component-indicators">
                                     <div class="indicator cpu-indicator" data-component="cpu">
                                         <i class="fas fa-microchip"></i>
@@ -214,18 +215,19 @@
         </div>
     </section>
 
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>beastro</h3>
+                    <h3>Beastro</h3>
                     <p>Your ultimate destination for premium gaming PC accessories and components.</p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="https://www.facebook.com"><i class="fab fa-facebook"></i></a>
+                        <a href="https://www.twitter.com"><i class="fab fa-twitter"></i></a>
+                        <a href="https://www.instagram.com"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.youtube.com"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">
@@ -714,10 +716,11 @@
 
         .pc-case-image {
             width: 100%;
-            height: 250px;
-            object-fit: cover;
+            height: 300px; /* give enough room for 4 tiles + title */
             display: block;
             transition: transform 0.3s ease;
+            background: radial-gradient(120% 100% at 10% 10%, rgba(0,212,255,0.12), transparent 60%),
+                        radial-gradient(120% 100% at 90% 90%, rgba(99,102,241,0.12), transparent 60%);
         }
 
         .pc-case-main:hover .pc-case-image {
@@ -765,42 +768,53 @@
             justify-content: center;
         }
 
-        .component-indicators {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 16px;
-            padding: 16px;
-            width: 100%;
-            height: 100%;
-            align-content: center; /* keep fully inside the case */
-            justify-items: center;
+        .pc-case-title {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.85);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+            pointer-events: none;
         }
 
+        .component-indicators {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr)); /* large screens: 4 in a row */
+            /* IMPORTANT: allow rows to size to content so all 4 show */
+            gap: 12px;
+            padding: 28px 12px 12px; /* make room for the title at top */
+            width: 100%;
+            height: auto; /* do not stretch to full height - prevents clipping */
+            background: transparent; /* keep the clean case look */
+            align-content: start;
+        }
+
+        /* Minimal icon tiles (no additional card look) */
         .indicator {
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 6px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            cursor: pointer;
+            padding: 8px;
+            background: transparent; /* no card background */
+            border: none;            /* no visible border */
+            border-radius: 10px;
+            transition: all 0.2s ease;
         }
 
         .indicator:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
         }
 
         .indicator.selected {
-            background: rgba(16, 185, 129, 0.8);
-            border-color: rgba(16, 185, 129, 0.5);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-            transform: scale(1.05);
+            background: transparent; /* keep minimal */
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.55);
+            transform: none;
         }
 
         .indicator.selected i {
@@ -825,10 +839,16 @@
             text-align: center;
         }
 
-        /* Ensure 4 icons are visible on small screens */
-        @media (max-width: 480px) {
-            .pc-case-image { height: 220px; }
-            .component-indicators { gap: 10px; padding: 12px; }
+        /* Medium screens: 2 per row */
+        @media (max-width: 992px) {
+            .pc-case-image { height: 260px; }
+            .component-indicators { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        /* Small/mobile: 1 per row */
+        @media (max-width: 600px) {
+            .pc-case-image { height: 240px; }
+            .component-indicators { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
             .indicator { padding: 10px; border-radius: 10px; }
             .indicator i { font-size: 1.1rem; }
             .indicator span { font-size: 0.7rem; }
@@ -1199,11 +1219,7 @@
                 height: 200px;
             }
             
-            .component-indicators {
-                grid-template-columns: 1fr;
-                gap: 15px;
-                padding: 15px;
-            }
+            .component-indicators { grid-template-columns: 1fr; gap: 15px; padding: 15px; }
             
             .indicator {
                 padding: 12px;
@@ -1223,9 +1239,7 @@
                 height: 180px;
             }
             
-            .component-indicators {
-                padding: 10px;
-            }
+            .component-indicators { padding: 10px; }
             
             .indicator {
                 padding: 10px;

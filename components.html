@@ -4,9 +4,371 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>beastro - Components</title>
+    <link rel="icon" type="image/png" href="icon.png">
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    
+<style>
+    /* Floating AI Bot Styles */
+    .floating-ai-bot {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 9999;
+    }
+
+    .ai-bot-circle {
+        width: 65px;
+        height: 65px;
+        background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
+        transition: all 0.3s ease;
+        position: relative;
+        animation: pulse 2s infinite;
+    }
+
+    .ai-bot-circle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 25px rgba(0, 212, 255, 0.6);
+    }
+
+    .ai-bot-circle i {
+        color: white;
+        font-size: 28px;
+    }
+
+    .ai-chat-popup {
+        position: absolute;
+        bottom: 80px;
+        right: 0;
+        width: 350px;
+        background: rgba(2, 6, 23, 0.98);
+        border: 2px solid var(--neon-blue);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
+        backdrop-filter: blur(10px);
+        display: none;
+        animation: slideInUp 0.3s ease;
+    }
+
+    .ai-chat-popup.active {
+        display: block;
+    }
+
+    .chat-header {
+        background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chat-header h4 {
+        color: white;
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .close-chat {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .close-chat:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+    }
+
+    .chat-messages {
+        height: 250px;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .message {
+        display: flex;
+        margin-bottom: 10px;
+    }
+
+    .bot-message {
+        justify-content: flex-start;
+    }
+
+    .user-message {
+        justify-content: flex-start;
+    }
+
+    .message p {
+        max-width: 80%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin: 0;
+    }
+
+    .bot-message p {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: white;
+        border-radius: 15px 15px 15px 5px;
+    }
+
+    .user-message p {
+        background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+        color: white;
+        border-radius: 15px 15px 5px 15px;
+    }
+
+    .chat-suggestions {
+        padding: 10px 15px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .suggestion-btn {
+        background: rgba(0, 212, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        color: var(--neon-blue);
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .suggestion-btn:hover {
+        background: var(--neon-blue);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .chat-input {
+        padding: 15px;
+        display: flex;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .chat-input input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 25px;
+        padding: 10px 15px;
+        color: white;
+        font-size: 0.9rem;
+        outline: none;
+    }
+
+    .chat-input input:focus {
+        border-color: var(--neon-blue);
+        box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+
+    .chat-input input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .chat-input button {
+        width: 40px;
+        height: 40px;
+        background: var(--neon-blue);
+        border: none;
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .chat-input button:hover {
+        background: var(--neon-purple);
+        transform: scale(1.1);
+    }
+
+    /* Animations */
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+        .floating-ai-bot {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .ai-bot-circle {
+            width: 55px;
+            height: 55px;
+        }
+
+        .ai-bot-circle i {
+            font-size: 24px;
+        }
+
+        .ai-chat-popup {
+            width: 300px;
+            bottom: 70px;
+        }
+
+        .chat-messages {
+            height: 220px;
+        }
+
+        .message p {
+            max-width: 85%;
+            font-size: 0.85rem;
+        }
+
+        .suggestion-btn {
+            padding: 5px 10px;
+            font-size: 0.75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .floating-ai-bot {
+            bottom: 15px;
+            right: 15px;
+        }
+
+        .ai-bot-circle {
+            width: 50px;
+            height: 50px;
+        }
+
+        .ai-bot-circle i {
+            font-size: 22px;
+        }
+
+        .ai-chat-popup {
+            width: 280px;
+            bottom: 65px;
+            right: 0;
+        }
+
+        .chat-header h4 {
+            font-size: 1rem;
+        }
+
+        .chat-messages {
+            height: 200px;
+            padding: 12px;
+        }
+
+        .message p {
+            max-width: 90%;
+            font-size: 0.8rem;
+            padding: 8px 12px;
+        }
+
+        .chat-suggestions {
+            padding: 8px 12px;
+            gap: 5px;
+        }
+
+        .suggestion-btn {
+            padding: 4px 8px;
+            font-size: 0.7rem;
+        }
+
+        .chat-input {
+            padding: 12px;
+        }
+
+        .chat-input input {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+
+        .chat-input button {
+            width: 35px;
+            height: 35px;
+        }
+    }
+
+    /* Landscape Mode */
+    @media (max-width: 768px) and (orientation: landscape) {
+        .ai-chat-popup {
+            width: 320px;
+            bottom: 70px;
+        }
+
+        .chat-messages {
+            height: 180px;
+        }
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+        display: flex;
+        gap: 5px;
+        padding: 10px 15px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(0, 212, 255, 0.3);
+        border-radius: 15px 15px 15px 5px;
+        width: fit-content;
+    }
+
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: var(--neon-blue);
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typing {
+        0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+        40% { transform: scale(1); opacity: 1; }
+    }
+
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -15,7 +377,7 @@
             <div class="nav-logo-section">
                 <a href="index.html" class="nav-logo">
                     <i class="fas fa-gamepad"></i>
-                    <span>beastro</span>
+                    <span>Beastro</span>
                 </a>
             </div>
             
@@ -53,7 +415,7 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count" id="cart-count">0</span>
                 </div>
-                <div class="nav-auth-section" id="nav-auth-section">
+                <div class="nav-auth-section" id="nav-auth-section"style="border: none; background: transparent; padding: 0;">
                     <!-- Auth content will be populated by auth.js -->
                 </div>
                 <div class="nav-toggle">
@@ -65,6 +427,7 @@
         </div>
     </nav>
 
+     <script src="js/mobile-nav-fixed.js"></script>
     <!-- Particles Background -->
     <div id="particles-js" class="particles"></div>
 
@@ -578,10 +941,10 @@
                     <h3>beastro</h3>
                     <p>Your ultimate destination for premium gaming PC accessories and components.</p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="https://www.facebook.com"><i class="fab fa-facebook"></i></a>
+                        <a href="https://www.twitter.com"><i class="fab fa-twitter"></i></a>
+                        <a href="https://www.instagram.com"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.youtube.com"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">
@@ -964,8 +1327,153 @@
         });
     </script>
     
+    <!-- Floating AI Bot (right bottom) -->
+    <div class="floating-ai-bot" id="floating-ai-bot">
+        <div class="ai-bot-circle" id="ai-bot-circle">
+            <i class="fas fa-robot"></i>
+        </div>
+        <div class="ai-chat-popup" id="ai-chat-popup">
+            <div class="chat-header">
+                <h4>beastro AI</h4>
+                <button class="close-chat" id="close-chat"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot-message"><p>Hello! How can I help you with gaming?</p></div>
+            </div>
+            <div class="chat-suggestions">
+                <button class="suggestion-btn" onclick="askQuickQuestion('Suggest a GPU for 1440p gaming')">Suggest GPU</button>
+                <button class="suggestion-btn" onclick="askQuickQuestion('PC build for under $1500')">$1500 Build</button>
+                <button class="suggestion-btn" onclick="askQuickQuestion('Best gaming headset?')">Best Headset</button>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chat-input" placeholder="Ask me anything...">
+                <button id="send-message"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/script.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/mobile-nav-fixed.js"></script>
-</body>
-</html> 
+    <script src="js/floating-bot.js"></script>
+
+    
+     
+<!-- Add JavaScript for Chatbot -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const botCircle = document.getElementById('ai-bot-circle');
+        const chatPopup = document.getElementById('ai-chat-popup');
+        const closeChat = document.getElementById('close-chat');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-message');
+
+        // Toggle chat popup
+        botCircle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            chatPopup.classList.toggle('active');
+        });
+
+        // Close chat
+        closeChat.addEventListener('click', function(e) {
+            e.stopPropagation();
+            chatPopup.classList.remove('active');
+        });
+
+        // Close chat when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!chatPopup.contains(e.target) && !botCircle.contains(e.target)) {
+                chatPopup.classList.remove('active');
+            }
+        });
+
+        // Send message function
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (message === '') return;
+
+            // Add user message
+            addMessage(message, 'user');
+            chatInput.value = '';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Simulate bot response
+            setTimeout(function() {
+                removeTypingIndicator();
+                const botResponse = getBotResponse(message);
+                addMessage(botResponse, 'bot');
+            }, 1500);
+        }
+
+        // Add message to chat
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'user' ? 'user-message' : 'bot-message'}`;
+            messageDiv.innerHTML = `<p>${text}</p>`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot-message typing';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) {
+                typing.remove();
+            }
+        }
+
+        // Get bot response (simple responses)
+        function getBotResponse(message) {
+            message = message.toLowerCase();
+            
+            if (message.includes('gpu') || message.includes('graphics')) {
+                return "For 1440p gaming, I recommend RTX 4070 or RX 7800 XT. For 4K, go with RTX 4090!";
+            } else if (message.includes('build') || message.includes('pc build')) {
+                return "What's your budget? I can suggest builds for $1000, $1500, or $2000+ ranges!";
+            } else if (message.includes('headset')) {
+                return "Best gaming headsets: SteelSeries Arctis Nova Pro, HyperX Cloud II, or Razer BlackShark V2!";
+            } else if (message.includes('cpu') || message.includes('processor')) {
+                return "For gaming, Intel i5-13600K or AMD Ryzen 7 7800X3D are excellent choices!";
+            } else if (message.includes('ram') || message.includes('memory')) {
+                return "16GB is minimum for gaming, 32GB recommended for future-proofing!";
+            } else {
+                return "I'm here to help with gaming PC questions! Ask me about CPUs, GPUs, RAM, or builds!";
+            }
+        }
+
+        // Event listeners
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Quick question function (make it global)
+        window.askQuickQuestion = function(question) {
+            chatInput.value = question;
+            sendMessage();
+        };
+    });
+</script>
+    </body>
+    </html>

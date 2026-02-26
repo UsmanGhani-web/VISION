@@ -523,8 +523,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Add notification animation
-const style1 = document.createElement('style1');
-style1.textContent = `
+const style = document.createElement('style');
+style.textContent = `
     @keyframes slideIn {
         from {
             transform: translateX(100%);

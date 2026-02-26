@@ -155,7 +155,12 @@ if (closeCart && cartSidebar) {
 
 // Close cart when clicking outside
 document.addEventListener('click', (e) => {
-    if (cartSidebar && !cartSidebar.contains(e.target) && !cartIcon.contains(e.target)) {
+    if (!cartSidebar) return;
+    // Use composedPath to reliably determine original click context
+    const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+    const clickedInsideCart = cartSidebar.contains(e.target) || path.includes(cartSidebar);
+    const clickedCartIcon = cartIcon && (cartIcon.contains(e.target) || path.includes(cartIcon));
+    if (!clickedInsideCart && !clickedCartIcon) {
         cartSidebar.classList.remove('active');
     }
 });
@@ -648,6 +653,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const closeHit = e.target.closest('.atc-close');
         if (closeHit) { closeAtc(); }
     });
+    // Capture-phase global handler to defeat interfering listeners
+    document.addEventListener('click', (e) => {
+        if (!atcOverlay.classList.contains('active')) return;
+        const closeHit = e.target.closest('.atc-close');
+        if (closeHit) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeAtc();
+        }
+    }, true);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && atcOverlay.classList.contains('active')) closeAtc(); });
     // Global delegated close as final fallback
     document.addEventListener('click', (e) => {
