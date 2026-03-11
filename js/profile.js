@@ -1,7 +1,8 @@
-// Profile Page Functionality for Bestro Gaming
+// Enhanced Profile Page Functionality for Beastro Gaming
 class ProfileManager {
     constructor() {
         this.currentUser = null;
+        this.orderHistory = JSON.parse(localStorage.getItem('order_history') || '[]');
         this.init();
     }
 
@@ -14,6 +15,29 @@ class ProfileManager {
         this.loadUserData();
         this.setupEventListeners();
         this.loadProfileData();
+        this.updateCartDisplay();
+        
+        // Listen for cart updates
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'shopping_cart') {
+                this.updateCartDisplay();
+            }
+        });
+    }
+
+    // Update cart display from global cart manager
+    updateCartDisplay() {
+        const cartCount = document.getElementById('cart-count');
+        if (cartCount && window.cartManager) {
+            const count = window.cartManager.getCartCount();
+            cartCount.textContent = count;
+            
+            // Add animation
+            cartCount.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                cartCount.style.transform = 'scale(1)';
+            }, 200);
+        }
     }
 
     // Check if user is authenticated
@@ -62,8 +86,8 @@ class ProfileManager {
     updateProfileHeader() {
         if (!this.currentUser) return;
 
-        document.getElementById('profile-name').textContent = `${this.currentUser.firstName} ${this.currentUser.lastName}`;
-        document.getElementById('profile-email').textContent = this.currentUser.email;
+        document.getElementById('profile-name').textContent = `${this.currentUser.firstName || ''} ${this.currentUser.lastName || ''}`.trim() || 'User';
+        document.getElementById('profile-email').textContent = this.currentUser.email || '';
         document.getElementById('profile-role').textContent = this.currentUser.role || 'User';
         
         // Update form fields
@@ -104,6 +128,38 @@ class ProfileManager {
             deleteAccountBtn.addEventListener('click', () => this.handleDeleteAccount());
         }
 
+        // Cart icon click
+        const cartIcon = document.getElementById('cart-icon');
+        if (cartIcon) {
+            cartIcon.addEventListener('click', () => this.toggleCart());
+        }
+
+        // Close cart
+        const closeCart = document.getElementById('close-cart');
+        if (closeCart) {
+            closeCart.addEventListener('click', () => this.closeCart());
+        }
+
+        // Continue shopping button
+        const continueBtn = document.getElementById('continue-shopping-btn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                window.location.href = 'products.html';
+            });
+        }
+
+        // Checkout button
+        const checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', () => {
+                if (window.cartManager && window.cartManager.getCartCount() > 0) {
+                    window.location.href = 'checkout.html';
+                } else {
+                    this.showMessage('Your cart is empty!', 'error');
+                }
+            });
+        }
+
         // Security toggles
         const twoFactorToggle = document.getElementById('2fa-toggle');
         if (twoFactorToggle) {
@@ -130,6 +186,63 @@ class ProfileManager {
         if (newsletterToggle) {
             newsletterToggle.addEventListener('change', (e) => this.handleNewsletterToggle(e));
         }
+
+        // Click outside cart to close
+        document.addEventListener('click', (e) => {
+            const cartSidebar = document.getElementById('cart-sidebar');
+            const cartIcon = document.getElementById('cart-icon');
+            if (cartSidebar && cartSidebar.classList.contains('active') && 
+                !cartSidebar.contains(e.target) && 
+                !cartIcon.contains(e.target)) {
+                this.closeCart();
+            }
+        });
+    }
+
+    // Toggle cart sidebar
+    toggleCart() {
+        const cartSidebar = document.getElementById('cart-sidebar');
+        if (cartSidebar) {
+            cartSidebar.classList.toggle('active');
+            
+            // Create overlay if it doesn't exist
+            let overlay = document.querySelector('.cart-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.className = 'cart-overlay';
+                overlay.addEventListener('click', () => this.closeCart());
+                document.body.appendChild(overlay);
+            }
+            
+            if (cartSidebar.classList.contains('active')) {
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                // Refresh cart display
+                if (window.cartManager) {
+                    window.cartManager.updateCartSidebar();
+                }
+            } else {
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+    }
+
+    // Close cart sidebar
+    closeCart() {
+        const cartSidebar = document.getElementById('cart-sidebar');
+        const overlay = document.querySelector('.cart-overlay');
+        
+        if (cartSidebar) {
+            cartSidebar.classList.remove('active');
+        }
+        
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
+        
+        document.body.style.overflow = '';
     }
 
     // Switch between tabs
@@ -192,15 +305,13 @@ class ProfileManager {
         // Get user data from localStorage
         const userData = this.currentUser;
         
-        // Get orders and payments data from cart (if exists)
-        const cart = JSON.parse(localStorage.getItem('gamingCart') || '[]');
-        const userOrders = cart.filter(item => item.userId === userData.id || !item.userId); // Include items without userId for demo
+        // Get order history
+        const totalOrders = this.orderHistory.length;
+        const totalSpent = this.orderHistory.reduce((sum, order) => {
+            return sum + (order.total || 0);
+        }, 0);
         
-        // Calculate totals
-        const totalOrders = userOrders.length;
-        const totalSpent = userOrders.reduce((sum, order) => sum + (parseFloat(order.price) || 0), 0);
-        
-        // Update statistics with proper formatting
+        // Update statistics
         const totalOrdersElement = document.getElementById('total-orders');
         const totalSpentElement = document.getElementById('total-spent');
         const memberSinceElement = document.getElementById('member-since');
@@ -211,10 +322,10 @@ class ProfileManager {
         }
         
         if (totalSpentElement) {
-            totalSpentElement.textContent = totalSpent > 0 ? `$${totalSpent.toFixed(2)}` : '$0.00';
+            totalSpentElement.textContent = `PKR ${totalSpent.toFixed(2)}`;
         }
         
-        // Format member since date properly
+        // Format member since date
         if (memberSinceElement) {
             if (userData.createdAt) {
                 try {
@@ -229,7 +340,6 @@ class ProfileManager {
                         memberSinceElement.textContent = 'Today';
                     }
                 } catch (error) {
-                    console.error('Error parsing created date:', error);
                     memberSinceElement.textContent = 'Today';
                 }
             } else {
@@ -237,7 +347,7 @@ class ProfileManager {
             }
         }
         
-        // Format last login date properly
+        // Format last login date
         if (lastLoginElement) {
             const lastLogin = localStorage.getItem('last_login');
             if (lastLogin && lastLogin !== 'Today') {
@@ -253,59 +363,12 @@ class ProfileManager {
                         lastLoginElement.textContent = 'Today';
                     }
                 } catch (error) {
-                    console.error('Error parsing last login date:', error);
                     lastLoginElement.textContent = 'Today';
                 }
             } else {
                 lastLoginElement.textContent = 'Today';
             }
         }
-        
-        // Add some demo data for better user experience
-        if (totalOrders === 0) {
-            // Show some demo statistics for new users
-            if (totalOrdersElement) totalOrdersElement.textContent = '0';
-            if (totalSpentElement) totalSpentElement.textContent = '$0.00';
-        }
-        
-        // Ensure all statistics are properly formatted and aligned
-        this.formatStatistics();
-    }
-
-    // Format statistics for better display
-    formatStatistics() {
-        const statNumbers = document.querySelectorAll('.stat-number');
-        const statLabels = document.querySelectorAll('.stat-label');
-        
-        // Ensure all numbers are properly formatted
-        statNumbers.forEach(number => {
-            if (number.textContent.includes('$')) {
-                // Format currency
-                const value = parseFloat(number.textContent.replace('$', ''));
-                if (!isNaN(value)) {
-                    number.textContent = `$${value.toFixed(2)}`;
-                }
-            } else if (number.textContent.includes('/')) {
-                // Format dates
-                try {
-                    const date = new Date(number.textContent);
-                    if (!isNaN(date.getTime())) {
-                        number.textContent = date.toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                        });
-                    }
-                } catch (error) {
-                    // Keep original text if date parsing fails
-                }
-            }
-        });
-        
-        // Ensure all labels are properly formatted
-        statLabels.forEach(label => {
-            label.textContent = label.textContent.trim();
-        });
     }
 
     // Load recent activity
@@ -313,34 +376,26 @@ class ProfileManager {
         const activityList = document.getElementById('recent-activity');
         if (!activityList) return;
 
-        // Get real activity data from localStorage
+        // Get activities from localStorage
         const activities = JSON.parse(localStorage.getItem('user_activities') || '[]');
 
-        // Clear existing activities
-        activityList.innerHTML = '';
-
         if (activities.length === 0) {
-            // Show only account creation activity if no other activities
-            const activityItem = document.createElement('div');
-            activityItem.className = 'activity-item';
-            activityItem.innerHTML = `
-                <i class="fas fa-user-plus"></i>
-                <span>Account created successfully</span>
-                <small>Just now</small>
+            // Show default activities
+            activityList.innerHTML = `
+                <div class="activity-item">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Account created successfully</span>
+                    <small>${new Date().toLocaleDateString()}</small>
+                </div>
             `;
-            activityList.appendChild(activityItem);
         } else {
-            // Add real activities
-            activities.forEach(activity => {
-                const activityItem = document.createElement('div');
-                activityItem.className = 'activity-item';
-                activityItem.innerHTML = `
+            activityList.innerHTML = activities.slice(0, 5).map(activity => `
+                <div class="activity-item">
                     <i class="${activity.icon}"></i>
                     <span>${activity.text}</span>
                     <small>${activity.time}</small>
-                `;
-                activityList.appendChild(activityItem);
-            });
+                </div>
+            `).join('');
         }
     }
 
@@ -349,11 +404,7 @@ class ProfileManager {
         const ordersList = document.getElementById('orders-list');
         if (!ordersList) return;
 
-        // Get orders from cart (if exists)
-        const cart = JSON.parse(localStorage.getItem('gamingCart') || '[]');
-        const userOrders = cart.filter(item => item.userId === this.currentUser.id || !item.userId); // Include items without userId for demo
-
-        if (userOrders.length === 0) {
+        if (this.orderHistory.length === 0) {
             ordersList.innerHTML = `
                 <div class="no-orders">
                     <i class="fas fa-shopping-bag"></i>
@@ -362,8 +413,7 @@ class ProfileManager {
                 </div>
             `;
         } else {
-            // Display orders
-            this.displayOrders(userOrders);
+            this.displayOrders(this.orderHistory);
         }
     }
 
@@ -372,24 +422,40 @@ class ProfileManager {
         const ordersList = document.getElementById('orders-list');
         if (!ordersList) return;
 
-        ordersList.innerHTML = '';
-
-        orders.forEach((order, index) => {
-            const orderItem = document.createElement('div');
-            orderItem.className = 'order-item';
-            orderItem.innerHTML = `
+        ordersList.innerHTML = orders.slice().reverse().map(order => `
+            <div class="order-card">
                 <div class="order-header">
-                    <h4>Order #${order.id || `DEMO-${index + 1}`}</h4>
-                    <span class="order-status ${order.status || 'pending'}">${order.status || 'Pending'}</span>
+                    <span class="order-id">Order #${order.orderId}</span>
+                    <span class="order-date">${new Date(order.date).toLocaleDateString()}</span>
+                    <span class="order-status">${order.status || 'Completed'}</span>
                 </div>
-                <div class="order-details">
-                    <p>Date: ${new Date().toLocaleDateString()}</p>
-                    <p>Total: $${order.price || 0}</p>
-                    <p>Item: ${order.name || 'Custom PC'}</p>
+                <div class="order-items">
+                    ${order.items.map(item => `
+                        <div class="order-item">
+                            <span>${item.name} x${item.quantity}</span>
+                            <span>PKR ${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                    `).join('')}
                 </div>
-            `;
-            ordersList.appendChild(orderItem);
-        });
+                <div class="order-footer">
+                    <span class="order-total">Total: PKR ${order.total.toFixed(2)}</span>
+                    <button class="btn btn-secondary" onclick="profileManager.viewOrder('${order.orderId}')">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // View order details
+    viewOrder(orderId) {
+        const order = this.orderHistory.find(o => o.orderId === orderId);
+        if (order) {
+            // Show order details in a modal or expand view
+            alert(`Order #${orderId}\n\nItems:\n${order.items.map(item => 
+                `${item.name} x${item.quantity} - PKR ${(item.price * item.quantity).toFixed(2)}`
+            ).join('\n')}\n\nTotal: PKR ${order.total.toFixed(2)}`);
+        }
     }
 
     // Load payments data
@@ -397,11 +463,7 @@ class ProfileManager {
         const paymentsList = document.getElementById('payments-list');
         if (!paymentsList) return;
 
-        // Get payments from cart (if exists)
-        const cart = JSON.parse(localStorage.getItem('gamingCart') || '[]');
-        const userPayments = cart.filter(item => item.userId === this.currentUser.id || !item.userId); // Include items without userId for demo
-
-        if (userPayments.length === 0) {
+        if (this.orderHistory.length === 0) {
             paymentsList.innerHTML = `
                 <div class="no-payments">
                     <i class="fas fa-credit-card"></i>
@@ -409,34 +471,30 @@ class ProfileManager {
                 </div>
             `;
         } else {
-            // Display payments
-            this.displayPayments(userPayments);
+            this.displayPayments(this.orderHistory);
         }
     }
 
     // Display payments
-    displayPayments(payments) {
+    displayPayments(orders) {
         const paymentsList = document.getElementById('payments-list');
         if (!paymentsList) return;
 
-        paymentsList.innerHTML = '';
-
-        payments.forEach((payment, index) => {
-            const paymentItem = document.createElement('div');
-            paymentItem.className = 'payment-item';
-            paymentItem.innerHTML = `
-                <div class="payment-header">
-                    <h4>Payment #${payment.id || `DEMO-${index + 1}`}</h4>
-                    <span class="payment-amount">$${payment.price || 0}</span>
+        paymentsList.innerHTML = orders.slice().reverse().map(order => `
+            <div class="payment-card">
+                <div class="payment-icon">
+                    <i class="fas ${order.payment?.method === 'card' ? 'fa-credit-card' : 
+                                     order.payment?.method === 'jazzcash' ? 'fa-mobile-alt' : 
+                                     order.payment?.method === 'easypaisa' ? 'fa-mobile-alt' : 'fa-university'}"></i>
                 </div>
                 <div class="payment-details">
-                    <p>Date: ${new Date().toLocaleDateString()}</p>
-                    <p>Method: Credit Card</p>
-                    <p>Item: ${payment.name || 'Custom PC'}</p>
+                    <div class="payment-order">Order #${order.orderId}</div>
+                    <div class="payment-method">${order.payment?.methodName || 'Card Payment'}</div>
+                    <div class="payment-date">${new Date(order.date).toLocaleDateString()}</div>
                 </div>
-            `;
-            paymentsList.appendChild(paymentItem);
-        });
+                <div class="payment-amount">PKR ${order.total.toFixed(2)}</div>
+            </div>
+        `).join('');
     }
 
     // Load security data
@@ -503,7 +561,7 @@ class ProfileManager {
 
         try {
             // Update user data in localStorage
-            this.currentUser.password = newPassword; // In real app, this would be hashed
+            this.currentUser.password = newPassword;
             localStorage.setItem('user', JSON.stringify(this.currentUser));
             
             // Also update in users list if exists
@@ -536,6 +594,13 @@ class ProfileManager {
         // Validation
         if (!newEmail || !password) {
             this.showMessage('Please fill in all fields', 'error');
+            return;
+        }
+
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(newEmail)) {
+            this.showMessage('Please enter a valid email address', 'error');
             return;
         }
 
@@ -609,17 +674,23 @@ class ProfileManager {
     // Handle delete account
     handleDeleteAccount() {
         if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-            // Clear user data
+            // Clear all user data
             localStorage.removeItem('user');
             localStorage.removeItem('token');
+            localStorage.removeItem('shopping_cart');
+            localStorage.removeItem('order_history');
+            localStorage.removeItem('user_settings');
+            localStorage.removeItem('user_activities');
             
             // Remove from users list if exists
             const users = JSON.parse(localStorage.getItem('users') || '[]');
             const updatedUsers = users.filter(u => u.id !== this.currentUser.id);
             localStorage.setItem('users', JSON.stringify(updatedUsers));
             
-            // Clear cart if exists
-            localStorage.removeItem('gamingCart');
+            // Clear cart in cart manager
+            if (window.cartManager) {
+                window.cartManager.clearCart();
+            }
             
             this.showMessage('Account deleted successfully', 'success');
             
@@ -635,65 +706,74 @@ class ProfileManager {
         const enabled = e.target.checked;
         localStorage.setItem('2fa_enabled', enabled);
         
-        if (enabled) {
-            this.showMessage('Two-factor authentication enabled', 'success');
-        } else {
-            this.showMessage('Two-factor authentication disabled', 'info');
-        }
+        this.showMessage(
+            enabled ? 'Two-factor authentication enabled' : 'Two-factor authentication disabled',
+            enabled ? 'success' : 'info'
+        );
     }
 
     // Handle login notifications toggle
     handleLoginNotificationsToggle(e) {
         const enabled = e.target.checked;
         localStorage.setItem('login_notifications', enabled);
+        this.showMessage('Login notifications updated', 'success');
     }
 
     // Handle order notifications toggle
     handleOrderNotificationsToggle(e) {
         const enabled = e.target.checked;
         localStorage.setItem('order_notifications', enabled);
+        this.showMessage('Order notifications updated', 'success');
     }
 
     // Handle promotional notifications toggle
     handlePromoNotificationsToggle(e) {
         const enabled = e.target.checked;
         localStorage.setItem('promo_notifications', enabled);
+        this.showMessage('Promotional notifications updated', 'success');
     }
 
     // Handle newsletter toggle
     handleNewsletterToggle(e) {
         const enabled = e.target.checked;
         localStorage.setItem('newsletter_notifications', enabled);
+        this.showMessage('Newsletter preferences updated', 'success');
     }
 
     // Add activity to recent activity list
     addActivity(text, icon) {
-        const activityList = document.getElementById('recent-activity');
-        if (!activityList) return;
-
-        const activityItem = document.createElement('div');
-        activityItem.className = 'activity-item';
-        activityItem.innerHTML = `
-            <i class="${icon}"></i>
-            <span>${text}</span>
-            <small>Just now</small>
-        `;
-
-        // Insert at the top
-        activityList.insertBefore(activityItem, activityList.firstChild);
+        const activities = JSON.parse(localStorage.getItem('user_activities') || '[]');
         
-        // Remove old activities if more than 5
-        const activities = activityList.querySelectorAll('.activity-item');
-        if (activities.length > 5) {
-            activities[activities.length - 1].remove();
+        activities.unshift({
+            icon: icon,
+            text: text,
+            time: 'Just now'
+        });
+        
+        // Keep only last 10 activities
+        if (activities.length > 10) {
+            activities.pop();
+        }
+        
+        localStorage.setItem('user_activities', JSON.stringify(activities));
+        
+        // Update recent activity display if on overview tab
+        if (document.getElementById('overview-content').classList.contains('active')) {
+            this.loadRecentActivity();
         }
     }
 
     // Show message
     showMessage(message, type) {
+        // Remove existing message
+        const existingMessage = document.querySelector('.profile-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+
         // Create message element
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message message-${type}`;
+        messageDiv.className = `profile-message message-${type}`;
         messageDiv.innerHTML = `
             <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
             <span>${message}</span>
@@ -705,11 +785,11 @@ class ProfileManager {
         // Show message
         setTimeout(() => messageDiv.classList.add('show'), 100);
 
-        // Remove message after 5 seconds
+        // Remove message after 3 seconds
         setTimeout(() => {
             messageDiv.classList.remove('show');
             setTimeout(() => messageDiv.remove(), 300);
-        }, 5000);
+        }, 3000);
     }
 
     // Load profile data
@@ -727,11 +807,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // Add message styles
 const messageStyles = document.createElement('style');
 messageStyles.textContent = `
-    .message {
+    .profile-message {
         position: fixed;
         top: 100px;
         right: 20px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(15, 23, 42, 0.95);
         backdrop-filter: blur(10px);
         border-radius: 10px;
         padding: 15px 20px;
@@ -743,28 +823,27 @@ messageStyles.textContent = `
         transform: translateX(400px);
         transition: transform 0.3s ease;
         border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        max-width: 350px;
     }
 
-    .message.show {
+    .profile-message.show {
         transform: translateX(0);
     }
 
     .message-success {
-        border-color: #10b981;
-        background: rgba(16, 185, 129, 0.2);
+        border-left: 4px solid #10b981;
     }
 
     .message-error {
-        border-color: #ef4444;
-        background: rgba(239, 68, 68, 0.2);
+        border-left: 4px solid #ef4444;
     }
 
     .message-info {
-        border-color: #3b82f6;
-        background: rgba(59, 130, 246, 0.2);
+        border-left: 4px solid #3b82f6;
     }
 
-    .message i {
+    .profile-message i {
         font-size: 1.2rem;
     }
 
@@ -779,5 +858,153 @@ messageStyles.textContent = `
     .message-info i {
         color: #3b82f6;
     }
+
+    /* Cart overlay styles */
+    .cart-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(3px);
+        z-index: 999;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .cart-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Order card styles */
+    .order-card {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .order-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .order-id {
+        font-weight: bold;
+        color: var(--neon-blue);
+    }
+
+    .order-date {
+        color: var(--light-blue);
+        font-size: 0.9rem;
+    }
+
+    .order-status {
+        padding: 4px 12px;
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid #10b981;
+        border-radius: 20px;
+        color: #10b981;
+        font-size: 0.8rem;
+    }
+
+    .order-items {
+        margin-bottom: 15px;
+    }
+
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 0;
+        color: var(--white);
+        font-size: 0.9rem;
+    }
+
+    .order-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .order-total {
+        font-weight: bold;
+        color: var(--neon-blue);
+    }
+
+    /* Payment card styles */
+    .payment-card {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(0, 212, 255, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+
+    .payment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 212, 255, 0.2);
+    }
+
+    .payment-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .payment-details {
+        flex: 1;
+    }
+
+    .payment-order {
+        font-weight: bold;
+        color: var(--white);
+        margin-bottom: 5px;
+    }
+
+    .payment-method {
+        color: var(--light-blue);
+        font-size: 0.9rem;
+    }
+
+    .payment-date {
+        color: var(--gray);
+        font-size: 0.8rem;
+    }
+
+    .payment-amount {
+        font-weight: bold;
+        color: var(--neon-blue);
+        font-size: 1.1rem;
+    }
+
+    /* Cart count animation */
+    #cart-count {
+        transition: transform 0.2s ease;
+    }
 `;
-document.head.appendChild(messageStyles); 
+document.head.appendChild(messageStyles);
