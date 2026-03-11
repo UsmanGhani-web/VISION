@@ -6,9 +6,11 @@ class CheckoutSystem {
             'WELCOME10': { discount: 0.10, description: '10% off for new customers' },
             'GAMING20': { discount: 0.20, description: '20% off gaming accessories' },
             'SAVE15': { discount: 0.15, description: '15% off all products' },
-            'STUDENT': { discount: 0.12, description: '12% off for students' }
+            'STUDENT': { discount: 0.12, description: '12% off for students' },
+            'BEASTRO25': { discount: 0.25, description: '25% off - Limited time!' }
         };
         this.appliedPromo = null;
+        this.orderHistory = JSON.parse(localStorage.getItem('order_history') || '[]');
         this.init();
     }
 
@@ -17,6 +19,7 @@ class CheckoutSystem {
         this.setupEventListeners();
         this.calculateTotals();
         this.setupFormValidation();
+        this.populateUserData();
     }
 
     loadCart() {
@@ -31,6 +34,7 @@ class CheckoutSystem {
                     <a href="products.html" class="btn btn-primary">Continue Shopping</a>
                 </div>
             `;
+            this.updateTotals(0);
             return;
         }
 
@@ -43,8 +47,26 @@ class CheckoutSystem {
                     <div class="item-quantity">Qty: ${item.quantity}</div>
                     <div class="item-price">PKR ${(item.price * item.quantity).toFixed(2)}</div>
                 </div>
+                <button class="remove-item-btn" onclick="checkoutSystem.removeItem('${item.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         `).join('');
+    }
+
+    removeItem(productId) {
+        this.cart = this.cart.filter(item => item.id !== productId);
+        localStorage.setItem('shopping_cart', JSON.stringify(this.cart));
+        this.loadCart();
+        this.calculateTotals();
+        this.updateCartCount();
+    }
+
+    updateCartCount() {
+        const cartCount = document.getElementById('cart-count');
+        if (cartCount) {
+            cartCount.textContent = this.cart.reduce((total, item) => total + item.quantity, 0);
+        }
     }
 
     setupEventListeners() {
@@ -100,6 +122,42 @@ class CheckoutSystem {
         phoneInputs.forEach(input => {
             input.addEventListener('input', this.formatPhoneNumber);
         });
+
+        // Continue shopping button
+        const continueBtn = document.getElementById('continue-shopping-btn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                window.location.href = 'products.html';
+            });
+        }
+
+        // Close cart sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+            const cartSidebar = document.getElementById('cart-sidebar');
+            const cartIcon = document.getElementById('cart-icon');
+            if (cartSidebar && cartSidebar.classList.contains('active') && 
+                !cartSidebar.contains(e.target) && 
+                !cartIcon.contains(e.target)) {
+                this.closeCartSidebar();
+            }
+        });
+    }
+
+    populateUserData() {
+        // Check if user is logged in
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user && user.email) {
+            document.getElementById('email').value = user.email || '';
+            
+            // Split name into first and last
+            if (user.name) {
+                const nameParts = user.name.split(' ');
+                document.getElementById('firstName').value = nameParts[0] || '';
+                document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
+            }
+            
+            document.getElementById('phone').value = user.phone || '';
+        }
     }
 
     handlePaymentMethodChange(method) {
@@ -359,14 +417,20 @@ class CheckoutSystem {
         placeOrderBtn.disabled = true;
 
         try {
+            // Collect order data
+            const orderData = this.collectOrderData();
+            
             // Simulate order processing
-            await this.processOrder();
+            await this.processOrder(orderData);
+            
+            // Save order to history
+            this.saveOrderToHistory(orderData);
             
             // Clear cart
-            localStorage.removeItem('shopping_cart');
+            this.clearCart();
             
             // Show success message
-            this.showOrderSuccess();
+            this.showOrderSuccess(orderData);
             
         } catch (error) {
             console.error('Order processing failed:', error);
@@ -378,87 +442,92 @@ class CheckoutSystem {
         }
     }
 
-    async processOrder() {
+    collectOrderData() {
+        return {
+            orderId: 'GT' + Date.now() + Math.floor(Math.random() * 1000),
+            date: new Date().toISOString(),
+            customer: {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value
+            },
+            shipping: {
+                address: document.getElementById('address').value,
+                city: document.getElementById('city').value,
+                postalCode: document.getElementById('postalCode').value,
+                province: document.getElementById('province').value
+            },
+            payment: {
+                method: document.querySelector('input[name="payment_method"]:checked').value,
+                methodName: this.getSelectedPaymentMethod()
+            },
+            items: this.cart,
+            subtotal: parseFloat(document.getElementById('subtotal').textContent.replace('PKR ', '')),
+            shipping: parseFloat(document.getElementById('shipping').textContent === 'Free' ? '0' : document.getElementById('shipping').textContent.replace('PKR ', '')),
+            tax: parseFloat(document.getElementById('tax').textContent.replace('PKR ', '')),
+            discount: this.appliedPromo ? parseFloat(document.getElementById('discount').textContent.replace('-PKR ', '')) : 0,
+            total: parseFloat(document.getElementById('total').textContent.replace('PKR ', '')),
+            promoApplied: this.appliedPromo ? this.appliedPromo.description : null
+        };
+    }
+
+    async processOrder(orderData) {
         return new Promise((resolve) => {
             // Simulate API call delay
             setTimeout(() => {
-                console.log('Order processed successfully');
+                console.log('Order processed successfully:', orderData);
                 resolve();
             }, 2000);
         });
     }
 
-    showOrderSuccess() {
-        const main = document.querySelector('.checkout-main');
-        main.innerHTML = `
-            <div class="container">
-                <div class="order-success">
-                    <div class="success-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h1>Order Placed Successfully!</h1>
-                    <p>Thank you for your purchase. Your order has been confirmed and will be processed shortly.</p>
-                    <div class="order-details">
-                        <h3>Order Details</h3>
-                        <p><strong>Order ID:</strong> #GT${Date.now()}</p>
-                        <p><strong>Total Amount:</strong> ${document.getElementById('total').textContent}</p>
-                        <p><strong>Payment Method:</strong> ${this.getSelectedPaymentMethod()}</p>
-                    </div>
-                    <div class="success-actions">
-                        <a href="index.html" class="btn btn-primary">Continue Shopping</a>
-                        <a href="profile.html" class="btn btn-secondary">View Orders</a>
-                    </div>
-                </div>
-            </div>
-        `;
+    saveOrderToHistory(orderData) {
+        this.orderHistory.push(orderData);
+        localStorage.setItem('order_history', JSON.stringify(this.orderHistory));
+    }
 
-        // Add success page styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .order-success {
-                text-align: center;
-                max-width: 600px;
-                margin: 50px auto;
-                padding: 50px;
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: 20px;
-                backdrop-filter: blur(10px);
+    clearCart() {
+        // Clear cart from localStorage
+        localStorage.removeItem('shopping_cart');
+        
+        // Reset cart array
+        this.cart = [];
+        
+        // Update cart count in navigation
+        this.updateCartCount();
+        
+        // Clear cart sidebar if exists
+        this.clearCartSidebar();
+    }
+
+    clearCartSidebar() {
+        const cartSidebar = document.getElementById('cart-sidebar');
+        if (cartSidebar) {
+            const cartItems = cartSidebar.querySelector('#cart-items');
+            const cartTotal = cartSidebar.querySelector('#cart-total');
+            
+            if (cartItems) {
+                cartItems.innerHTML = '<p class="empty-cart-message">Your cart is empty</p>';
             }
-            .success-icon {
-                font-size: 5rem;
-                color: #10b981;
-                margin-bottom: 30px;
+            
+            if (cartTotal) {
+                cartTotal.textContent = '0.00';
             }
-            .order-success h1 {
-                color: var(--white);
-                margin-bottom: 20px;
-            }
-            .order-success p {
-                color: rgba(255, 255, 255, 0.8);
-                margin-bottom: 30px;
-            }
-            .order-details {
-                background: rgba(255, 255, 255, 0.05);
-                padding: 25px;
-                border-radius: 15px;
-                margin: 30px 0;
-            }
-            .order-details h3 {
-                color: var(--white);
-                margin-bottom: 15px;
-            }
-            .order-details p {
-                margin: 10px 0;
-                text-align: left;
-            }
-            .success-actions {
-                display: flex;
-                gap: 20px;
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-        `;
-        document.head.appendChild(style);
+        }
+    }
+
+    closeCartSidebar() {
+        const cartSidebar = document.getElementById('cart-sidebar');
+        const overlay = document.querySelector('.cart-overlay');
+        
+        if (cartSidebar) {
+            cartSidebar.classList.remove('active');
+        }
+        
+        if (overlay) {
+            overlay.classList.remove('active');
+        }
     }
 
     getSelectedPaymentMethod() {
@@ -475,6 +544,233 @@ class CheckoutSystem {
         return paymentNames[selected.value] || selected.value;
     }
 
+    showOrderSuccess(orderData) {
+        const main = document.querySelector('.checkout-main');
+        
+        // Close cart sidebar if open
+        this.closeCartSidebar();
+        
+        main.innerHTML = `
+            <div class="container">
+                <div class="order-success">
+                    <div class="success-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h1>Order Placed Successfully!</h1>
+                    <p>Thank you for your purchase. Your order has been confirmed and will be processed shortly.</p>
+                    
+                    <div class="order-details">
+                        <h3>Order Details</h3>
+                        <div class="order-detail-grid">
+                            <div class="detail-row">
+                                <span class="detail-label">Order ID:</span>
+                                <span class="detail-value">#${orderData.orderId}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Order Date:</span>
+                                <span class="detail-value">${new Date(orderData.date).toLocaleString()}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Total Amount:</span>
+                                <span class="detail-value">PKR ${orderData.total.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Payment Method:</span>
+                                <span class="detail-value">${orderData.payment.methodName}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Shipping Address:</span>
+                                <span class="detail-value">${orderData.shipping.address}, ${orderData.shipping.city}, ${orderData.shipping.province}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="ordered-items">
+                            <h4>Ordered Items</h4>
+                            ${orderData.items.map(item => `
+                                <div class="ordered-item">
+                                    <span>${item.name} x${item.quantity}</span>
+                                    <span>PKR ${(item.price * item.quantity).toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="success-actions">
+                        <a href="index.html" class="btn btn-primary">
+                            <i class="fas fa-home"></i>
+                            Continue Shopping
+                        </a>
+                        <a href="profile.html" class="btn btn-secondary">
+                            <i class="fas fa-history"></i>
+                            View Orders
+                        </a>
+                        <button onclick="window.print()" class="btn btn-outline">
+                            <i class="fas fa-print"></i>
+                            Print Receipt
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add success page styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .order-success {
+                text-align: center;
+                max-width: 700px;
+                margin: 50px auto;
+                padding: 50px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 20px;
+                backdrop-filter: blur(10px);
+                animation: fadeInUp 0.5s ease;
+            }
+            
+            .success-icon {
+                font-size: 5rem;
+                color: #10b981;
+                margin-bottom: 30px;
+                animation: scaleIn 0.5s ease;
+            }
+            
+            .order-success h1 {
+                color: var(--white);
+                margin-bottom: 20px;
+                font-size: 2rem;
+            }
+            
+            .order-success p {
+                color: rgba(255, 255, 255, 0.8);
+                margin-bottom: 30px;
+            }
+            
+            .order-details {
+                background: rgba(255, 255, 255, 0.05);
+                padding: 30px;
+                border-radius: 15px;
+                margin: 30px 0;
+                text-align: left;
+            }
+            
+            .order-details h3 {
+                color: var(--white);
+                margin-bottom: 20px;
+                text-align: center;
+            }
+            
+            .order-detail-grid {
+                display: grid;
+                gap: 15px;
+            }
+            
+            .detail-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .detail-label {
+                color: rgba(255, 255, 255, 0.6);
+                font-weight: 500;
+            }
+            
+            .detail-value {
+                color: var(--white);
+                font-weight: 600;
+            }
+            
+            .ordered-items {
+                margin-top: 25px;
+                padding-top: 20px;
+                border-top: 2px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .ordered-items h4 {
+                color: var(--white);
+                margin-bottom: 15px;
+            }
+            
+            .ordered-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 0;
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 0.95rem;
+            }
+            
+            .success-actions {
+                display: flex;
+                gap: 20px;
+                justify-content: center;
+                flex-wrap: wrap;
+                margin-top: 30px;
+            }
+            
+            .btn-outline {
+                background: transparent;
+                border: 2px solid var(--primary-color);
+                color: var(--white);
+            }
+            
+            .btn-outline:hover {
+                background: var(--primary-color);
+                color: var(--white);
+            }
+            
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes scaleIn {
+                from {
+                    transform: scale(0);
+                }
+                to {
+                    transform: scale(1);
+                }
+            }
+            
+            .empty-cart-message {
+                text-align: center;
+                color: rgba(255, 255, 255, 0.6);
+                padding: 20px;
+            }
+            
+            .remove-item-btn {
+                background: none;
+                border: none;
+                color: rgba(255, 255, 255, 0.5);
+                cursor: pointer;
+                padding: 5px;
+                transition: color 0.3s ease;
+            }
+            
+            .remove-item-btn:hover {
+                color: #ef4444;
+            }
+            
+            .cart-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                animation: slideIn 0.3s ease;
+            }
+        `;
+        
+        document.head.appendChild(style);
+    }
+
     showNotification(message, type = 'info') {
         // Remove existing notifications
         const existing = document.querySelector('.notification');
@@ -485,7 +781,7 @@ class CheckoutSystem {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.innerHTML = `
-            <i class="fas ${type === 'success' ? 'fa-check' : type === 'error' ? 'fa-times' : 'fa-info'}"></i>
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
             <span>${message}</span>
         `;
 
@@ -494,16 +790,19 @@ class CheckoutSystem {
             position: fixed;
             top: 100px;
             right: 20px;
-            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            background: ${type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 
+                         type === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 
+                         'linear-gradient(135deg, #3b82f6, #2563eb)'};
             color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
+            padding: 15px 25px;
+            border-radius: 50px;
             display: flex;
             align-items: center;
             gap: 10px;
             z-index: 10000;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease;
+            animation: slideInRight 0.3s ease;
+            font-weight: 500;
         `;
 
         document.body.appendChild(notification);
@@ -511,7 +810,12 @@ class CheckoutSystem {
         // Auto remove after 5 seconds
         setTimeout(() => {
             if (notification.parentNode) {
-                notification.remove();
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
             }
         }, 5000);
     }
@@ -522,12 +826,34 @@ document.addEventListener('DOMContentLoaded', () => {
     window.checkoutSystem = new CheckoutSystem();
 });
 
-// Add notification animation
+// Add notification animations
 const style = document.createElement('style');
 style.textContent = `
-    @keyframes slideIn {
+    @keyframes slideInRight {
         from {
             transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(-10px);
             opacity: 0;
         }
         to {
@@ -540,6 +866,34 @@ style.textContent = `
     .form-group select.error {
         border-color: #ef4444;
         background: rgba(239, 68, 68, 0.1);
+        animation: shake 0.3s ease;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    /* Print styles */
+    @media print {
+        .navbar,
+        .footer,
+        .success-actions,
+        .checkout-steps,
+        .notification {
+            display: none !important;
+        }
+        
+        .order-success {
+            box-shadow: none;
+            background: white;
+            color: black;
+        }
+        
+        .order-success * {
+            color: black !important;
+        }
     }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style);
